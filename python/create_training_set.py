@@ -37,7 +37,7 @@ class TrainingSet:
         print(data[player_properties])
 
     def collect_player_datas(self):
-        print("\nCollecting player data...")
+        print("Collecting player data...")
         season = self.season
         path = f"/home/evenmn/Fantasy-Premier-League/data/{season}/players/"
         # player_properties = ["bps", "creativity", "ict_index", "influence", "minutes", "opponent_team", "team_a_score", "team_h_score", "threat", "total_points", "was_home"]
@@ -52,9 +52,12 @@ class TrainingSet:
     def prepare_data_sets(self, dept=5, test=0.2):
         """Preparing training set, test set and targets
         """
-        player_properties = ["bps", "creativity", "ict_index", "influence", "minutes", "opponent_team", "team_a_score", "team_h_score", "threat", "total_points", "was_home"]
+        # player_properties = ["bps", "creativity", "ict_index", "influence", "minutes", "opponent_team", "team_a_score", "team_h_score", "threat", "total_points", "was_home"]
+        player_properties = ["assists", "attempted_passes", "big_chances_created", "big_chances_missed", "bonus", "bps", "clean_sheets", "clearances_blocks_interceptions", "completed_passes", "creativity", "dribbles", "ea_index", "element", "errors_leading_to_goal", "errors_leading_to_goal_attempt", "fixture", "fouls", "goals_conceded", "goals_scored", "ict_index", "id", "influence", "key_passes", "loaned_in", "loaned_out", "minutes", "offside", "open_play_crosses", "opponent_team", "own_goals", "penalties_conceded", "penalties_missed", "penalties_saved", "recoveries", "red_cards", "round", "saves", "selected", "tackled", "tackles", "target_missed", "team_a_score", "team_h_score", "threat", "total_points", "transfers_balance", "transfers_in", "transfers_out", "value", "was_home", "winning_goals", "yellow_cards"]
+        number_of_features = dept * len(player_properties)
         datas = self.collect_player_datas()
         print("\nPreparing training set...")
+        print(f"Number of features: {number_of_features}")
         inputs = []
         targets = []
         j = 0
@@ -64,7 +67,7 @@ class TrainingSet:
             while not end:
                 try:
                     inp = np.asarray(data[player_properties][i:i+dept], dtype=float).flatten()
-                    if len(inp) == dept * len(player_properties):
+                    if len(inp) == number_of_features:
                         targets.append(data["total_points"][i+dept+1])
                         inputs.append(inp)
                         j += 1
@@ -136,9 +139,9 @@ if __name__ == "__main__":
     seasons = ["2016-17", "2017-18", "2018-19", "2019-20"]
     train_x, train_t, test_x, test_t = [], [], [], []
     for season in seasons:
-        print(f"SEASON {season}")
+        print(f"\nSEASON {season}")
         train = TrainingSet(season=season)
-        modules = [nn.Linear(55, 64),
+        modules = [nn.Linear(260, 64),
                    nn.ReLU(),
                    nn.Linear(64, 64),
                    nn.ReLU(),
