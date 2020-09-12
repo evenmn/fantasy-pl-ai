@@ -36,8 +36,27 @@ class InitialRound:
                     continue
         return np.asarray(x, dtype=float), np.asarray(t, dtype=int).reshape(len(x), 1)
 
+    def collect_player_history_raw(self):
+        print("Collecting player history...")
+        seasons = ["2016-17", "2017-18", "2018-19", "2019-20"]
+        player_features = ["assists", "bonus", "bps", "chance_of_playing_next_round", "chance_of_playing_this_round", "clean_sheets", "cost_change_event", "cost_change_event_fall", "cost_change_start", "cost_change_start_fall", "creativity", "dreamteam_count","ea_index", "element_type", "ep_next", "ep_this", "event_points", "form", "goals_conceded", "goals_scored", "ict_index", "id", "in_dreamteam", "influence", "loaned_in", "loaned_out", "loans_in", "loans_out", "minutes", "now_cost", "own_goals", "penalties_missed", "penalties_saved", "points_per_game", "red_cards", "saves", "selected_by_percent", "special", "squad_number", "status", "team", "team_code", "threat", "total_points", "transfers_in", "transfers_in_event", "transfers_out", "transfers_out_event", "value_form", "value_season", "yellow_cards"]
+        path = "/home/evenmn/Fantasy-Premier-League/data/{}/players_raw.csv"
+        x, t = [], []
+        for i in tqdm(range(len(seasons) - 1)):
+            data1 = pd.read_csv(path.format(seasons[i]))
+            for line in data1[player_features]:
+                name = line["first_name"] + "_" + line["second_name"]
+                path2 = path.format(seasons[i+1]) + name + "*/gw.csv"
+                try:
+                    data2 = pd.read_csv(glob.glob(path2)[-1])
+                    x.append(list(line))
+                    t.append(data2["total_points"].iloc[0])
+                except IndexError:
+                    continue
+        return np.asarray(x, dtype=float), np.asarray(t, dtype=int).reshape(len(x), 1)
+
     def gen_train_test(self, test=0.2):
-        x, t = self.collect_player_history()
+        x, t = self.collect_player_history_raw()
         print(x.shape)
         print(t.shape)
         num_test = int(len(x) * test)
@@ -194,4 +213,4 @@ if __name__ == "__main__":
 
     init.train_torch(x_train, t_train, lr=1e-6, max_iter=10000)
     init.test(x_test, t_test)
-    init.select_initial_team(formation="3-5-2")
+    init.select_initial_squad()
