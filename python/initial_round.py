@@ -113,42 +113,56 @@ class InitialRound:
                 continue
         return names, predicted_points
 
-    def select_initial_team(self, formation="3-5-2", season="2020-21"):
+    def select_initial_squad(self, formation="2-5-5-3", season="2020-21"):
         formation_split = np.asarray(formation.split("-"), dtype=int)
         formation_split = np.insert(formation_split, 0, 1)
 
         num_teams = 20
-
-        num_players = np.sum(formation_split)
-        assert num_players == 11, "Invalid formation!"
 
         names, predicted_points = self.predict(season)
         names = np.asarray(names, dtype=str)
         predicted_points = np.asarray(predicted_points, dtype=float)
         sorted = np.argsort(predicted_points)
 
-        print("\nSetting up team...")
+        print("\nSelecting squad...")
         path = "/home/evenmn/Fantasy-Premier-League/data/{}/players_raw.csv"
         data = pd.read_csv(path.format(season))
         players = [[] for _ in range(len(formation_split))]
         points = [[] for _ in range(len(formation_split))]
         total_points = []
-        cost = 0
+        squad_price = 0
         players_teams = np.zeros(num_teams)
+
+        # finding points per price
+        players_sorted, cost, points_per_price, points = [], [], [], []
         for i in sorted[::-1]:
             name = names[i]
             name_split = name.split("_")
             j = 0
             for f, s in zip(data["first_name"], data["second_name"]):
                 if f == name_split[0] and s == name_split[1]:
+                    price = data["now_cost"].iloc[j]
+                    point = predicted_points[i]
+                    cost.append(price)
+                    points.append(point)
+                    players_sorted.append(name)
+                    points_per_price.append(point / price)
+
+        argsorted = np.argsort(points_per_price)
+        for i in argsorted[::-1]:
+            name = players_sorted[i]
+            name_split = name.split("_")
+            j = 0
+            for f, s in zip(data["first_name"], data["second_name"]):
+                if f == name_split[0] and s == name_split[1]:
                     position = data["element_type"].iloc[j]
-                    new_cost = cost + data["now_cost"].iloc[j]
+                    new_price = squad_price + cost[i]
                     team = data["team"].iloc[j]
                     if len(players[position-1]) < formation_split[position-1] and new_cost < self.BUDGET and players_teams[team-1] < 3:
                         players[position-1].append(name)
-                        total_points.append(predicted_points[i])
-                        points[position-1].append(int(predicted_points[i]))
-                        cost = new_cost
+                        total_points.append(points[i])
+                        points[position-1].append(int(points[i]))
+                        squad_price = new_price
                         players_teams[team-1] += 1
                 j += 1
         print(f"Total team cost: {cost/10:1f}")
