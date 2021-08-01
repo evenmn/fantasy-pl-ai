@@ -80,28 +80,16 @@ class Player:
     """
     def __init__(self, name):
         self.name = name
+
+    def __str__(self, season):
+        """String representation of player
         """
-        if name is None and id is None:
-            raise ValueError("Neither name nor ID is given")
-        elif name is not None and id is not None:
-            # try: ...
-            #     find name
-            # except IndexError:
-            #     # find player name that is most similar to name
-            #     print(f"Player {name} was not found, did you mean {}?")
-            # call id and compare with name
-            # if id_found != id:
-            #     print("Both name and ID was given, but they do not match. Sticking to the name")
-            pass
-        elif name is not None:
-            # try: ...
-            #id = ...
-            pass
-        else:
-            # try: ...
-            pass
-        # at this point, both the name and the id should be known
-        """
+        position, pos_short = self.get_player_position(season)
+        team, team_short = self.get_team_name(season)
+        print(self.name.upper())
+        print(f" - {position:<16} ({pos_short})")
+        print(f" - {team:<16} ({team_short})")
+        print("")
 
     def get_player_id(self, season):
         """
@@ -168,22 +156,35 @@ class Player:
         """Get current price of player, given player ID. This
         is based on the 'season/players_raw.csv' file
         """
-        players_raw_file = state_dir + season + "/players_raw.csv"
+        players_raw_file = stats_dir + season + "/players_raw.csv"
         players = pd.read_csv(players_raw_file)
         player_ids = players['id']
         now_cost = players['now_cost']
         row_ind = player_ids.index[player_ids == self.player_id].to_list()[0]
         return now_cost[row_ind]
 
-    def get_gameweek_price(self, gameweek):
+    def get_gameweek_price(self, season, gameweek):
         """Get player price at a certain gameweek
         """
-        pass
+        player_id = self.get_player_id(season)
+        gw_file = stats_dir + season + f"/gws/gw{gameweek}.csv"
+        stats = pd.read_csv(gw_file)
+        player_ids = stats['element']
+        price = stats['value']
+        row_ind = player_ids.index[player_ids == player_id].to_list()[0]
+        return price[row_ind]
 
-    def get_gameweek_points(self, gameweek):
+
+    def get_gameweek_points(self, season, gameweek):
         """Get player points at a certain gameweek
         """
-        pass
+        player_id = self.get_player_id(season)
+        gw_file = stats_dir + season + f"/gws/gw{gameweek}.csv"
+        stats = pd.read_csv(gw_file)
+        player_ids = stats['element']
+        points = stats['total_points']
+        row_ind = player_ids.index[player_ids == player_id].to_list()[0]
+        return points[row_ind]
 
 
 class Goalkeeper(Player):
