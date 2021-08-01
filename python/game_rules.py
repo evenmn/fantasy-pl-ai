@@ -2,169 +2,56 @@
 """
 
 
-class Team:
-    """Football team class. Contains information about
-        - Players
-        - Formation
-        - Captain
-        - Vice captain
-
-    Parameters:
-    ----------
-    players : list
-        list containing all player IDs (15)
-    bench : list
-        list containing all IDs of players on the bench (4)
-    captain : int
-        ID of captain
-    vice_captain : int
-        ID of vice captain
-    """
-    """Actions:
-        - Transfer players (15 player IDs)
-        - Choose captain (1 player ID)
-        - Choose vice captain (1 player ID)
-        - Play chips (4 booleans)
-    """
-
-    def __init__(self, players, bench, captain, vice_captain):
-        self.players = players
-        self.bench = bench
-        self.captain = captain
-        self.vice_captain = vice_captain
-
-        assert len(players) == 15, "15 players required!"
-        assert len(bench) == 4, "4 players have to be on the bench!"
-
-        self.check_player_existence()
-        self.check_players_on_bench()
-        self.check_captains()
-
-    def __str__(self):
-        """Display team nicely
-        """
-        names = self.get_names()
-        positions = self.get_positions()
-
-        print("My team")
-
-    def check_player_existence(self):
-        """Assert that all player IDs link to actual players
-        """
-        for player in self.players:
-            try:
-                # call vaasev
-            except:
-                raise ValueError(f"No player with ID {player} found!")
-        print("All players exist")
-
-    def check_player_duplicate(self):
-        pass
-
-    def check_players_on_bench(self):
-        """Assert that all players on bench also are among the players
-        """
-        for bench_player in self.bench:
-            assert bench_player in self.players, f"Bench player {bench_player} is not among the listed players"
-        print("All players on the bench are in the team")
-
-    def check_captains(self):
-        """Check is captain and vice captain are among players
-        """
-        assert self.captain in self.players, "Captain not among selected players!"
-        assert self.vice_captain in self.players, "Vice captain not among selected players!"
-        print("Captains approved")
-
-    def get_names(self):
-        """Get player names
-        """
-        names = []
-        for player in self.players:
-            # call vaasev
-            name = ""
-            names.append(name)
-        return names
-
-    def get_teams(self):
-        """Get player teams
-        """
-        teams = []
-        for player in self.players:
-            # call vaasev
-            team = ""
-            teams.append(team)
-        return teams
-
-    def get_costs(self):
-        """Get player costs
-        """
-        costs = []
-        for player in self.players:
-            # call vaasev
-            cost = ""
-            costs.append(cost)
-        return costs
-
-    def get_positions(self):
-        """Get player positions
-        """
-        positions = []
-        for player in self.players:
-            # call vaasev
-            position = ""
-            positions.append(position)
-        return positions
-
-    def get_customs(self, keyword):
-        customs = []
-        for player in self.players:
-            # call vaasev
-            custom = ""
-            customs.append(custom)
-        return customs
-        
-
-
 def validate_team(team, budget):
     """Check if team follows the Fantasy PL rules:
-        - Each team contains:
-            -> 2 keepers
-            -> 5 defenders
-            -> 5 midfielders
-            -> 3 forwards
         - Accepted formations are 4-3-3, 4-4-2, 4-5-1, 3-4-3, 3-5-2
         - Maximum three players from each club is allowed
         - The total price of players cannot exceed 100M
     """
 
-    def validate_players(team):
-        """Ensure that there are 2 keepers, 5 defenders,
-        5 midfielders and 3 forwards
-        """
-        expected_positions = ["k", "k", "d", "d", "d", "d", "d",
-                              "m", "m", "m", "m", "m", "f", "f", "f"]
-        positions = team.get_positions()
-        assert sort(positions) == sort(expected_positions), "..."
-        print("All positions are filled correctly")
-
     def validate_formation(team):
-        pass 
+        """Validate formation. Accepted formations are 4-3-3, 4-4-2, 
+        4-5-1, 3-4-3, 3-5-2. 
+        """
+        valid_bench_positions = [[1, 2, 3, 3],
+                                 [1, 2, 3, 4],
+                                 [1, 2, 4, 4],
+                                 [1, 2, 2, 3],
+                                 [1, 2, 2, 4]]
+        bench_positions = []
+        for player in team.bench:
+            bench_positions.append(player.get_player_position_id(team.season))
+        assert sort(bench_positions) in valid_bench_positions, "Formation not approved!"
+        print("Formation approved")
 
     def validate_player_team(team):
-        pass
+        """Maximum three players can be picked from each team
+        """
+        team_ids = team.get_team_ids()
+        team_count = {i:team_ids.count(i) for i in team_ids}
+        for duplicates in team_count.values():
+            assert duplicates <= 3, "Found more than three players from a team"
+        print("Player teams approved")
 
     def validate_player_costs(team, budget):
         """
         """
-        costs = team.get_costs()
-        assert costs <= budget, "Budget exceeded"
+        total_cost = team.get_team_cost()
+        assert total_cost <= budget, "Budget exceeded"
+        print("Team cost is within budget")
+
+    validate_formation(team)
+    validate_player_team(team)
+    validate_player_costs(team, budget)
 
 
 def get_number_of_transfers(team1, team2):
-    pass
+    changes = list(set(team1.player_ids) - set(team2.player_ids))
+    return len(changes)
 
 def display_all_changes(team1, team2):
-    pass
+    changes = list(set(team1.player_ids) - set(team2.player_ids))
+    return changes
 
 
 class FPL:
@@ -182,6 +69,7 @@ class FPL:
     MAX_FREE_TRANSFERS = 2
     TRANSFER_COST = 4
     NEW_WILDCARD_GAMEWEEK = 20
+    GAMEWEEKS = 38
 
     def __init__(self, team, chips):
         self.team = team
@@ -195,10 +83,20 @@ class FPL:
         self.free_transfers = 1
         self.gameweek = 1
 
+        self.money_bank = 1000
+        self.total_player_value = 0
+
+        self.total_points = 0
+        self.points_current_round = 0
+        self.total_transfers = 0
+
         validate_team(team)
         self.update_chips()
 
     def update_chips(self):
+        """The chips played needs to be updated after action is performed
+        (before every new gameweek)
+        """
         assert count(self.chips, True) <= 1, "Only one chip can be played at once"
 
         if self.chips[0] is True:
@@ -215,17 +113,23 @@ class FPL:
             self.bench_boost_played = True
 
     def next_gameweek(self):
+        self.total_points += team.get_team_points_gameweek(self.gameweek)
         self.gameweek += 1
         self.free_transfers += 1
         if self.free_transfers > MAX_FREE_TRANSFERS:
             self.free_transfers = MAX_FREE_TRANSFERS
         if self.gameweek == NEW_WILDCARD_GAMEWEEK:
             self.wildcard_played = False
+        if self.gameweek > GAMEWEEKS:
+            print("Game is over")
 
-    def perform_action(team, chips):
+    def perform_actions(team, chips):
+        """Update team and play chips
+        """
         self.old_team = self.team
         self.team = team
         self.update_chips(chips)
+        validate_team(team)
 
         num_transfers = get_number_of_transfers(self.team, self.old_team)
 
@@ -237,14 +141,62 @@ class FPL:
 
         total_transfer_cost = TRANSFER_COST * num_nonfree_transfers
 
-        
 
+if __name__ == "__main__":
+    """
+    Example: Playing with same team for entire season and
+    do not play chips
+    """
 
-def __name__ == "__main__":
-    team1 = Team([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [12, 13, 14, 15], 1, 2)
-    validate_team(team1)
+    from players import Player
+    from team import Team
 
-    team2 = Team([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16], [12, 13, 14, 16], 1, 2)
-    validate_team(team2)
+    season = "2020-21"
 
-    num_transfers = get_number_of_transfers(team1, team2)
+    ## team
+    # keepers
+    mccarthy = Player("Alex McCarthy")
+    nyland = Player("Ørjan Nyland")
+    keepers = [mccarthy, nyland]
+
+    # defenders
+    arnold = Player("Trent Alexander-Arnold")
+    justin = Player("James Justin")
+    stevens = Player("Enda Stevens")
+    vinagre = Player("Rúben Gonçalo Silva Nascimento Vinagre")
+    dallas = Player("Stuart Dallas")
+    defenders = [arnold, justin, stevens, vinagre, dallas]
+
+    # midfielders
+    salah = Player("Mohamed Salah")
+    aubameyang = Player("Pierre-Emerick Aubameyang")
+    maddison = Player("James Maddison")
+    stephens = Player("Dale Stephens")
+    romeu = Player("Oriol Romeu Vidal")
+    midfielders = [salah, aubameyang, maddison, stephens, romeu]
+
+    # forwards
+    kane = Player("Harry Kane")
+    ings = Player("Danny Ings")
+    mitrovic = Player("Aleksandar Mitrović")
+    forwards = [kane, ings, mitrovic]
+
+    bench = [nyland, stevens, romeu, mitrovic]
+    captain = kane
+    vice_captain = salah
+
+    team = Team(season, keepers, defenders, midfielders, forwards, bench, captain, vice_captain)
+    print("Initial team cost: ", team.get_team_cost_gameweek(1))
+
+    ## chips
+    wildcard = False
+    free_hit = False
+    triple_cap = False
+    bench_boost = False
+    chips = [wildcard, free_hit, triple_cap, bench_boost]
+
+    ## play game
+    game = FPL(team, chips)
+    for _ in range(38):
+        game.next_gameweek()
+    print("Final points: ", game.total_points)    

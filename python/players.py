@@ -171,6 +171,7 @@ class Player:
         stats = pd.read_csv(gw_file)
         player_ids = stats['element']
         price = stats['value']
+        print(self.name)
         row_ind = player_ids.index[player_ids == player_id].to_list()[0]
         return price[row_ind]
 
