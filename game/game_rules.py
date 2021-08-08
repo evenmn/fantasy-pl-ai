@@ -2,7 +2,7 @@
 """
 
 
-def validate_team(team, budget):
+def validate_team(team, budget, gameweek):
     """Check if team follows the Fantasy PL rules:
         - Accepted formations are 4-3-3, 4-4-2, 4-5-1, 3-4-3, 3-5-2
         - Maximum three players from each club is allowed
@@ -21,7 +21,7 @@ def validate_team(team, budget):
         bench_positions = []
         for player in team.bench:
             bench_positions.append(player.get_player_position_id(team.season))
-        assert sort(bench_positions) in valid_bench_positions, "Formation not approved!"
+        assert sorted(bench_positions) in valid_bench_positions, "Formation not approved!"
         print("Formation approved")
 
     def validate_player_team(team):
@@ -33,16 +33,16 @@ def validate_team(team, budget):
             assert duplicates <= 3, "Found more than three players from a team"
         print("Player teams approved")
 
-    def validate_player_costs(team, budget):
+    def validate_player_costs(team, budget, gameweek):
         """
         """
-        total_cost = team.get_team_cost()
+        total_cost = team.get_team_cost_gameweek(gameweek)
         assert total_cost <= budget, "Budget exceeded"
         print("Team cost is within budget")
 
     validate_formation(team)
     validate_player_team(team)
-    validate_player_costs(team, budget)
+    validate_player_costs(team, budget, gameweek)
 
 
 def get_number_of_transfers(team1, team2):
@@ -90,14 +90,14 @@ class FPL:
         self.points_current_round = 0
         self.total_transfers = 0
 
-        validate_team(team)
+        validate_team(team, self.money_bank, self.gameweek)
         self.update_chips()
 
     def update_chips(self):
         """The chips played needs to be updated after action is performed
         (before every new gameweek)
         """
-        assert count(self.chips, True) <= 1, "Only one chip can be played at once"
+        assert sum(self.chips) <= 1, "Only one chip can be played at once"
 
         if self.chips[0] is True:
             assert self.wildcard_played is False, "Wildcard is already played"
@@ -116,11 +116,11 @@ class FPL:
         self.total_points += team.get_team_points_gameweek(self.gameweek)
         self.gameweek += 1
         self.free_transfers += 1
-        if self.free_transfers > MAX_FREE_TRANSFERS:
-            self.free_transfers = MAX_FREE_TRANSFERS
-        if self.gameweek == NEW_WILDCARD_GAMEWEEK:
+        if self.free_transfers > self.MAX_FREE_TRANSFERS:
+            self.free_transfers = self.MAX_FREE_TRANSFERS
+        if self.gameweek == self.NEW_WILDCARD_GAMEWEEK:
             self.wildcard_played = False
-        if self.gameweek > GAMEWEEKS:
+        if self.gameweek > self.GAMEWEEKS:
             print("Game is over")
 
     def perform_actions(team, chips):

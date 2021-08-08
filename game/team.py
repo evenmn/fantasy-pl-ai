@@ -24,7 +24,8 @@ class Team:
         ID of vice captain
     """
 
-    def __init__(self, season, keepers, defenders, midfielders, forwards, bench, captain, vice_captain):
+    def __init__(self, season, keepers, defenders, midfielders,
+                 forwards, bench, captain, vice_captain):
         assert len(keepers) == 2, "Exactly 2 keepers required!"
         assert len(defenders) == 5, "Exactly 5 defenders required!"
         assert len(midfielders) == 5, "Exactly 5 midfielders required!"

@@ -171,9 +171,11 @@ class Player:
         stats = pd.read_csv(gw_file)
         player_ids = stats['element']
         price = stats['value']
-        print(self.name)
-        row_ind = player_ids.index[player_ids == player_id].to_list()[0]
-        return price[row_ind]
+        try:
+            row_ind = player_ids.index[player_ids == player_id].to_list()[0]
+            return price[row_ind]
+        except IndexError:
+            return 0
 
 
     def get_gameweek_points(self, season, gameweek):
@@ -184,8 +186,11 @@ class Player:
         stats = pd.read_csv(gw_file)
         player_ids = stats['element']
         points = stats['total_points']
-        row_ind = player_ids.index[player_ids == player_id].to_list()[0]
-        return points[row_ind]
+        try:
+            row_ind = player_ids.index[player_ids == player_id].to_list()[0]
+            return points[row_ind]
+        except IndexError:
+            return 0
 
 
 class Goalkeeper(Player):
