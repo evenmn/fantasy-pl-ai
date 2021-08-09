@@ -47,6 +47,7 @@ class Team:
 
         self.players = keepers + defenders + midfielders + forwards
         self.positions = [keepers, defenders, midfielders, forwards]
+        self.out_players = list(set(self.players) - set(bench))
         
         self.bench = bench
         self.captain = captain
@@ -153,6 +154,61 @@ class Team:
             custom = ""
             customs.append(custom)
         return customs
+
+    def auto_substitute(self, gameweek):
+        """Auto substitute players with bench players.
+        The rule is to replace a player that did not
+        play with the first bench player (except the
+        goalkeeper). If possible, a player will be
+        substituted
+        """
+        # split bench in keeper and not keeper
+        bench_sorted = self.bench.copy()
+        for i, bench_player in enumerate(self.bench):
+            if bench_player.get_player_position_id(self.season) == 1:
+                bench_keeper = bench_player
+                bench_sorted.pop(i)
+                break
+        
+        one_player_substituted = False
+        #out_players = list(set(self.players) - set(self.bench))
+        for player in self.out_players:
+            if player.get_gameweek_minutes(self.season, gameweek) == 0:
+                if player.get_player_position_id(self.season) == 1:
+                    # check keeper
+                    #if keeper[0] == player:
+                    #    other_keeper = keeper[1]
+                    #else:
+                    #    other_keeper = keeper[0]
+                    if bench_keeper.get_gameweek_minutes(self.season, gameweek) != 0:
+                        bench_keeper = player
+                        one_player_substituted = True
+                        print("Keeper substituted")
+                        break
+                else:
+                    # check other players
+                    if bench_sorted[0].get_gameweek_minutes(self.season, gameweek) !=0:
+                        bench_sorted[0] = bench_sorted[1]
+                        bench_sorted[1] = bench_sorted[2]
+                        bench_sorted[2] = player
+                        one_player_substituted = True
+                        print(f"{bench_sorted[0].name} substituted for {player.name}")
+                        break
+                    elif bench_sorted[1].get_gameweek_minutes(self.season, gameweek) != 0:
+                        bench_sorted[1] = bench_sorted[2]
+                        bench_sorted[2] = player
+                        one_player_substituted = True
+                        print(f"{bench_sorted[1].name} substituted for {player.name}")
+                        break
+                    elif bench_sorted[2].get_gameweek_minutes(self.season, gameweek) != 0:
+                        bench_sorted[2] = player
+                        one_player_substituted = True
+                        print(f"{bench_sorted[2].name} substituted for {player.name}")
+                        break
+                    else:
+                        print("No player substituted")
+        self.bench = [bench_keeper] + bench_sorted
+        return one_player_substituted
 
 
 if __name__ == "__main__":

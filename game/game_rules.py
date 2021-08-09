@@ -102,9 +102,11 @@ class FPL:
         if self.chips[0] is True:
             assert self.wildcard_played is False, "Wildcard is already played"
             self.wildcard_played = True
+            self.free_transfers = 2**10000   # setting number of free transfers
         if self.chips[1] is True:
             assert self.free_hit_played is False, "Free hit is already played"
             self.free_hit_played = True
+            self.free_transfers = 2**10000   # to arbitrary large number
         if self.chips[2] is True:
             assert self.triple_cap_played is False, "Triple captain is already played"
             self.triple_cap_played = True
@@ -112,34 +114,81 @@ class FPL:
             assert self.bench_boost_played is False, "Bench boost is already played"
             self.bench_boost_played = True
 
+    def auto_substitute(self):
+        """Auto substitute players with bench players
+        """
+        substitute = True
+        while substitute:
+            team_old = self.team
+            substitute = self.team.auto_substitute(self.gameweek)
+            try:
+                validate_team(team, self.money_bank, self.gameweek)
+            except AssertionError:
+                self.team = team_old
+
+    def compute_gameweek_points(self):
+        """
+        """
+        if self.chips[3] is True:
+            players_loop = self.team.players
+        else:
+            players_loop = self.team.out_players
+
+        points = 0
+        for player in players_loop:
+            points += player.get_gameweek_points(self.team.season, self.gameweek)
+        factor = 1 + self.chips[2]
+        if self.team.captain in self.team.out_players:
+            points += factor * self.team.captain.get_gameweek_points(self.team.season, self.gameweek)
+        elif self.team.vice_captain in self.team.out_players:
+            points += factor * self.team.vice_captain.get_gameweek_points(self.team.season, self.gameweek)
+        return points
+
     def next_gameweek(self):
-        self.total_points += team.get_team_points_gameweek(self.gameweek)
+        """Enter next gameweek. This starts with computing the number of
+        points from the last gameweek
+        """
+        # calculate points
+        team_before_sub = self.team
+        self.auto_substitute()
+        points = self.compute_gameweek_points()
+        print(f"Total points from last gameweek was {points}.")
+        self.total_points += points
+        self.team = team_before_sub
+
+        # move on to next gameweek
         self.gameweek += 1
         self.free_transfers += 1
-        if self.free_transfers > self.MAX_FREE_TRANSFERS:
+        if self.chips[0]:
+            self.free_transfers = 1
+        if self.chips[1] is True:
+            self.team = self.old_team
+            self.free_transfers = 1
+        elif self.free_transfers > self.MAX_FREE_TRANSFERS:
             self.free_transfers = self.MAX_FREE_TRANSFERS
         if self.gameweek == self.NEW_WILDCARD_GAMEWEEK:
             self.wildcard_played = False
         if self.gameweek > self.GAMEWEEKS:
             print("Game is over")
+        self.chips = [False, False, False, False]
 
     def perform_actions(team, chips):
         """Update team and play chips
         """
         self.old_team = self.team
         self.team = team
-        self.update_chips(chips)
+        self.chips = chips
+        self.update_chips()
         validate_team(team)
 
+        # compute transfer costs
         num_transfers = get_number_of_transfers(self.team, self.old_team)
 
-        num_nonfree_transfers = num_transfers - self.free_transfers
+        num_nonfree_transfers = max(0, num_transfers - self.free_transfers)
+        self.free_transfers = max(0, self.free_transfers - num_transfers)
 
-        self.free_transfers -= num_transfers
-        if self.free_transfers < 0:
-            self.free_transfers = 0
-
-        total_transfer_cost = TRANSFER_COST * num_nonfree_transfers
+        total_transfer_cost = self.TRANSFER_COST * num_nonfree_transfers
+        print(f"{num_transfers} transfers made at a cost of {total_transfer_cost}")
 
 
 if __name__ == "__main__":
@@ -199,4 +248,4 @@ if __name__ == "__main__":
     game = FPL(team, chips)
     for _ in range(38):
         game.next_gameweek()
-    print("Final points: ", game.total_points)    
+    print("Final points: ", game.total_points)

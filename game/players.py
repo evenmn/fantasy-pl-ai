@@ -104,7 +104,13 @@ class Player:
             row_ind = players.index[self.name == full_name].to_list()[0]
         except IndexError:
             matches = difflib.get_close_matches(self.name, list(full_name))
-            raise IndexError(f"No player with name {self.name} exists, did you mean {matches}?")
+            if len(matches) > 2:
+                suggestions =  ', '.join(matches[:-1]) + ", or " + str(matches[-1])
+            elif len(matches) == 2:
+                suggestions =  ' or '.join(matches)
+            elif len(matches) == 1:
+                suggestions =  matches[0]
+            raise IndexError(f"No player with name {self.name} exists, did you mean {suggestions}?")
         return ids[row_ind]
 
 
@@ -163,34 +169,59 @@ class Player:
         row_ind = player_ids.index[player_ids == self.player_id].to_list()[0]
         return now_cost[row_ind]
 
-    def get_gameweek_price(self, season, gameweek):
-        """Get player price at a certain gameweek
+
+    def get_gameweek_custom(self, keyword, season, gameweek):
+        """
         """
         player_id = self.get_player_id(season)
         gw_file = stats_dir + season + f"/gws/gw{gameweek}.csv"
         stats = pd.read_csv(gw_file)
         player_ids = stats['element']
-        price = stats['value']
+        custom = stats[keyword]
         try:
             row_ind = player_ids.index[player_ids == player_id].to_list()[0]
-            return price[row_ind]
+            return custom[row_ind]
         except IndexError:
             return 0
+
+
+
+    def get_gameweek_price(self, season, gameweek):
+        """Get player price in a certain gameweek
+        """
+        return self.get_gameweek_custom('value', season, gameweek)
+        #player_id = self.get_player_id(season)
+        #gw_file = stats_dir + season + f"/gws/gw{gameweek}.csv"
+        #stats = pd.read_csv(gw_file)
+        #player_ids = stats['element']
+        #price = stats['value']
+        #try:
+        #    row_ind = player_ids.index[player_ids == player_id].to_list()[0]
+        #    return price[row_ind]
+        #except IndexError:
+        #    return 0
 
 
     def get_gameweek_points(self, season, gameweek):
-        """Get player points at a certain gameweek
+        """Get player points in a certain gameweek
         """
-        player_id = self.get_player_id(season)
-        gw_file = stats_dir + season + f"/gws/gw{gameweek}.csv"
-        stats = pd.read_csv(gw_file)
-        player_ids = stats['element']
-        points = stats['total_points']
-        try:
-            row_ind = player_ids.index[player_ids == player_id].to_list()[0]
-            return points[row_ind]
-        except IndexError:
-            return 0
+        return self.get_gameweek_custom('total_points', season, gameweek)
+        #player_id = self.get_player_id(season)
+        #gw_file = stats_dir + season + f"/gws/gw{gameweek}.csv"
+        #stats = pd.read_csv(gw_file)
+        #player_ids = stats['element']
+        #points = stats['total_points']
+        #try:
+        #    row_ind = player_ids.index[player_ids == player_id].to_list()[0]
+        #    return points[row_ind]
+        #except IndexError:
+        #    return 0
+
+
+    def get_gameweek_minutes(self, season, gameweek):
+        """Get number of minutes played in a certain gameweek
+        """
+        return self.get_gameweek_custom('minutes', season, gameweek)
 
 
 class Goalkeeper(Player):
